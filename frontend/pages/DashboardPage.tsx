@@ -25,6 +25,13 @@ export default function DashboardPage() {
   const stores = storesData?.stores || [];
   const selectedStore = stores.find(store => store.id === selectedStoreId);
 
+  // Auto-select first store if none selected
+  React.useEffect(() => {
+    if (stores.length > 0 && !selectedStoreId) {
+      setSelectedStoreId(stores[0].id);
+    }
+  }, [stores, selectedStoreId]);
+
   const { data: productsData } = useQuery({
     queryKey: ['products', selectedStoreId],
     queryFn: () => selectedStoreId ? backend.product.listByStore({ storeId: selectedStoreId }) : null,
@@ -106,7 +113,7 @@ export default function DashboardPage() {
                       </div>
                       <div className="text-center">
                         <div className="text-2xl font-bold text-purple-600">
-                          ${orders.reduce((sum, order) => sum + order.totalAmount, 0) / 100}
+                          ${(orders.reduce((sum, order) => sum + order.totalAmount, 0) / 100).toFixed(2)}
                         </div>
                         <div className="text-sm text-gray-600">Revenue</div>
                       </div>

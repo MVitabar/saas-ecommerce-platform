@@ -12,7 +12,7 @@ CREATE TABLE cart_items (
   product_id BIGINT NOT NULL,
   store_id BIGINT NOT NULL,
   quantity INTEGER NOT NULL CHECK (quantity > 0),
-  price_at_time BIGINT NOT NULL,
+  price_at_time DECIMAL(10,2) NOT NULL,
   variant_data JSONB,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),

@@ -43,7 +43,7 @@ export const get = api<{ id: number }, OrderResponse>(
         storeId: order.store_id,
         customerEmail: order.customer_email,
         customerName: order.customer_name,
-        totalAmount: order.total_amount,
+        totalAmount: order.total_amount * 100, // Convert to cents for frontend
         status: order.status as 'pending' | 'paid' | 'shipped' | 'delivered' | 'canceled',
         stripePaymentIntentId: order.stripe_payment_intent_id || undefined,
         shippingAddress: order.shipping_address || undefined,
@@ -52,7 +52,7 @@ export const get = api<{ id: number }, OrderResponse>(
           orderId: item.order_id,
           productId: item.product_id,
           productName: item.product_name,
-          productPrice: item.product_price,
+          productPrice: item.product_price * 100, // Convert to cents for frontend
           quantity: item.quantity,
           createdAt: item.created_at,
         })),

@@ -22,6 +22,9 @@ ALTER TABLE products ADD COLUMN max_order_quantity INTEGER;
 ALTER TABLE products ADD COLUMN shipping_class TEXT DEFAULT 'standard';
 ALTER TABLE products ADD COLUMN status TEXT DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'out_of_stock', 'discontinued'));
 
+-- Update price column to use cents
+ALTER TABLE products ALTER COLUMN price TYPE BIGINT USING (price * 100);
+
 CREATE INDEX idx_products_brand ON products(brand);
 CREATE INDEX idx_products_sku ON products(sku);
 CREATE INDEX idx_products_rating ON products(rating);

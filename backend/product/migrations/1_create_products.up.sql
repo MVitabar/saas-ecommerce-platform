@@ -3,7 +3,7 @@ CREATE TABLE products (
   store_id BIGINT NOT NULL,
   name TEXT NOT NULL,
   description TEXT,
-  price BIGINT NOT NULL, -- Price in cents
+  price DECIMAL(10,2) NOT NULL,
   image_url TEXT,
   inventory INTEGER NOT NULL DEFAULT 0,
   is_active BOOLEAN DEFAULT true,

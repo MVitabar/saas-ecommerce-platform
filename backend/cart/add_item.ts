@@ -86,7 +86,7 @@ export const addItem = api<AddToCartRequest, CartResponse>(
       // Add new item
       cartItem = await cartDB.queryRow`
         INSERT INTO cart_items (cart_id, product_id, store_id, quantity, price_at_time, variant_data)
-        VALUES (${cart.id}, ${req.productId}, ${req.storeId}, ${req.quantity}, ${product.price}, ${JSON.stringify(req.variantData || null)})
+        VALUES (${cart.id}, ${req.productId}, ${req.storeId}, ${req.quantity}, ${product.price / 100}, ${JSON.stringify(req.variantData || null)})
         RETURNING *
       `;
     }
@@ -106,7 +106,7 @@ export const addItem = api<AddToCartRequest, CartResponse>(
       SELECT * FROM cart_items WHERE cart_id = ${cart.id}
     `;
 
-    const totalAmount = cartItems.reduce((sum, item) => sum + (item.price_at_time * item.quantity), 0);
+    const totalAmount = cartItems.reduce((sum, item) => sum + (item.price_at_time * item.quantity * 100), 0);
 
     return {
       cart: {
@@ -119,7 +119,7 @@ export const addItem = api<AddToCartRequest, CartResponse>(
           productId: item.product_id,
           storeId: item.store_id,
           quantity: item.quantity,
-          priceAtTime: item.price_at_time,
+          priceAtTime: item.price_at_time * 100,
           variantData: item.variant_data,
           createdAt: item.created_at,
           updatedAt: item.updated_at,

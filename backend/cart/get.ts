@@ -34,7 +34,7 @@ export const get = api<{ sessionId: string }, CartResponse>(
       SELECT * FROM cart_items WHERE cart_id = ${cart.id}
     `;
 
-    const totalAmount = cartItems.reduce((sum, item) => sum + (item.price_at_time * item.quantity), 0);
+    const totalAmount = cartItems.reduce((sum, item) => sum + (item.price_at_time * item.quantity * 100), 0);
 
     return {
       cart: {
@@ -47,7 +47,7 @@ export const get = api<{ sessionId: string }, CartResponse>(
           productId: item.product_id,
           storeId: item.store_id,
           quantity: item.quantity,
-          priceAtTime: item.price_at_time,
+          priceAtTime: item.price_at_time * 100,
           variantData: item.variant_data,
           createdAt: item.created_at,
           updatedAt: item.updated_at,

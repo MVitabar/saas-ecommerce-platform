@@ -3,7 +3,7 @@ CREATE TABLE orders (
   store_id BIGINT NOT NULL,
   customer_email TEXT NOT NULL,
   customer_name TEXT NOT NULL,
-  total_amount BIGINT NOT NULL, -- Total in cents
+  total_amount DECIMAL(10,2) NOT NULL,
   status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'paid', 'shipped', 'delivered', 'canceled')),
   stripe_payment_intent_id TEXT,
   shipping_address JSONB,
@@ -16,7 +16,7 @@ CREATE TABLE order_items (
   order_id BIGINT NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
   product_id BIGINT NOT NULL,
   product_name TEXT NOT NULL,
-  product_price BIGINT NOT NULL, -- Price in cents at time of order
+  product_price DECIMAL(10,2) NOT NULL,
   quantity INTEGER NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
