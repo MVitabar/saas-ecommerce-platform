@@ -1,0 +1,20 @@
+ALTER TABLE stores ADD COLUMN category_id BIGINT;
+ALTER TABLE stores ADD COLUMN banner_url TEXT;
+ALTER TABLE stores ADD COLUMN theme_settings JSONB DEFAULT '{}';
+ALTER TABLE stores ADD COLUMN business_type TEXT DEFAULT 'individual' CHECK (business_type IN ('individual', 'business', 'enterprise'));
+ALTER TABLE stores ADD COLUMN tax_id TEXT;
+ALTER TABLE stores ADD COLUMN business_address JSONB;
+ALTER TABLE stores ADD COLUMN contact_info JSONB DEFAULT '{}';
+ALTER TABLE stores ADD COLUMN social_links JSONB DEFAULT '{}';
+ALTER TABLE stores ADD COLUMN store_policies JSONB DEFAULT '{}';
+ALTER TABLE stores ADD COLUMN rating DECIMAL(3,2) DEFAULT 0.00;
+ALTER TABLE stores ADD COLUMN total_reviews INTEGER DEFAULT 0;
+ALTER TABLE stores ADD COLUMN total_sales INTEGER DEFAULT 0;
+ALTER TABLE stores ADD COLUMN verification_status TEXT DEFAULT 'pending' CHECK (verification_status IN ('pending', 'verified', 'rejected'));
+ALTER TABLE stores ADD COLUMN featured BOOLEAN DEFAULT false;
+ALTER TABLE stores ADD COLUMN subscription_expires_at TIMESTAMP WITH TIME ZONE;
+
+CREATE INDEX idx_stores_category_id ON stores(category_id);
+CREATE INDEX idx_stores_rating ON stores(rating);
+CREATE INDEX idx_stores_verification_status ON stores(verification_status);
+CREATE INDEX idx_stores_featured ON stores(featured);

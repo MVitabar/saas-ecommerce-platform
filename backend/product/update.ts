@@ -14,34 +14,77 @@ export const update = api<{ id: number } & UpdateProductRequest, ProductResponse
       throw APIError.invalidArgument("inventory must be non-negative");
     }
 
+    // Check if SKU is unique (if being updated)
+    if (updates.sku) {
+      const existingProduct = await productDB.queryRow`
+        SELECT id FROM products WHERE sku = ${updates.sku} AND id != ${id}
+      `;
+      
+      if (existingProduct) {
+        throw APIError.alreadyExists("product with this SKU already exists");
+      }
+    }
+
     const setParts: string[] = [];
     const values: any[] = [];
     let paramIndex = 1;
 
-    if (updates.name !== undefined) {
-      setParts.push(`name = $${paramIndex++}`);
-      values.push(updates.name);
-    }
-    if (updates.description !== undefined) {
-      setParts.push(`description = $${paramIndex++}`);
-      values.push(updates.description);
-    }
-    if (updates.price !== undefined) {
-      setParts.push(`price = $${paramIndex++}`);
-      values.push(updates.price);
-    }
-    if (updates.imageUrl !== undefined) {
-      setParts.push(`image_url = $${paramIndex++}`);
-      values.push(updates.imageUrl);
-    }
-    if (updates.inventory !== undefined) {
-      setParts.push(`inventory = $${paramIndex++}`);
-      values.push(updates.inventory);
-    }
+    // Handle backward compatibility for isActive
     if (updates.isActive !== undefined) {
-      setParts.push(`is_active = $${paramIndex++}`);
-      values.push(updates.isActive);
+      updates.status = updates.isActive ? 'active' : 'inactive';
     }
+
+    // Handle images array (backward compatibility)
+    if (updates.images !== undefined || updates.imageUrl !== undefined) {
+      let images = updates.images || [];
+      if (updates.imageUrl && !images.includes(updates.imageUrl)) {
+        images = [updates.imageUrl, ...images];
+      }
+      setParts.push(`images = $${paramIndex++}`);
+      values.push(JSON.stringify(images));
+    }
+
+    // Update all other fields
+    const fieldMappings = {
+      categoryId: 'category_id',
+      name: 'name',
+      description: 'description',
+      brand: 'brand',
+      sku: 'sku',
+      price: 'price',
+      weight: 'weight',
+      dimensions: 'dimensions',
+      attributes: 'attributes',
+      variants: 'variants',
+      tags: 'tags',
+      metaTitle: 'meta_title',
+      metaDescription: 'meta_description',
+      seoKeywords: 'seo_keywords',
+      inventory: 'inventory',
+      featured: 'featured',
+      discountType: 'discount_type',
+      discountValue: 'discount_value',
+      discountStartDate: 'discount_start_date',
+      discountEndDate: 'discount_end_date',
+      minOrderQuantity: 'min_order_quantity',
+      maxOrderQuantity: 'max_order_quantity',
+      shippingClass: 'shipping_class',
+      status: 'status',
+    };
+
+    Object.entries(fieldMappings).forEach(([jsField, dbField]) => {
+      if (updates[jsField as keyof UpdateProductRequest] !== undefined) {
+        let value = updates[jsField as keyof UpdateProductRequest];
+        
+        // Handle JSON fields
+        if (['dimensions', 'attributes', 'variants'].includes(jsField)) {
+          value = JSON.stringify(value);
+        }
+        
+        setParts.push(`${dbField} = $${paramIndex++}`);
+        values.push(value);
+      }
+    });
 
     if (setParts.length === 0) {
       throw APIError.invalidArgument("no fields to update");
@@ -60,11 +103,34 @@ export const update = api<{ id: number } & UpdateProductRequest, ProductResponse
     const product = await productDB.rawQueryRow<{
       id: number;
       store_id: number;
+      category_id: number | null;
       name: string;
       description: string | null;
+      brand: string | null;
+      sku: string | null;
       price: number;
-      image_url: string | null;
+      weight: number | null;
+      dimensions: any;
+      attributes: any;
+      variants: any;
+      images: any;
+      tags: string[];
+      meta_title: string | null;
+      meta_description: string | null;
+      seo_keywords: string[];
+      rating: number;
+      total_reviews: number;
+      total_sales: number;
       inventory: number;
+      featured: boolean;
+      discount_type: string;
+      discount_value: number;
+      discount_start_date: Date | null;
+      discount_end_date: Date | null;
+      min_order_quantity: number;
+      max_order_quantity: number | null;
+      shipping_class: string;
+      status: string;
       is_active: boolean;
       created_at: Date;
       updated_at: Date;
@@ -78,12 +144,36 @@ export const update = api<{ id: number } & UpdateProductRequest, ProductResponse
       product: {
         id: product.id,
         storeId: product.store_id,
+        categoryId: product.category_id || undefined,
         name: product.name,
         description: product.description || undefined,
+        brand: product.brand || undefined,
+        sku: product.sku || undefined,
         price: product.price,
-        imageUrl: product.image_url || undefined,
+        weight: product.weight || undefined,
+        dimensions: product.dimensions || undefined,
+        attributes: product.attributes || {},
+        variants: product.variants || [],
+        images: product.images || [],
+        imageUrl: (product.images && product.images[0]) || undefined,
+        tags: product.tags || [],
+        metaTitle: product.meta_title || undefined,
+        metaDescription: product.meta_description || undefined,
+        seoKeywords: product.seo_keywords || [],
+        rating: product.rating,
+        totalReviews: product.total_reviews,
+        totalSales: product.total_sales,
         inventory: product.inventory,
-        isActive: product.is_active,
+        featured: product.featured,
+        discountType: product.discount_type as 'none' | 'percentage' | 'fixed',
+        discountValue: product.discount_value,
+        discountStartDate: product.discount_start_date || undefined,
+        discountEndDate: product.discount_end_date || undefined,
+        minOrderQuantity: product.min_order_quantity,
+        maxOrderQuantity: product.max_order_quantity || undefined,
+        shippingClass: product.shipping_class,
+        status: product.status as 'active' | 'inactive' | 'out_of_stock' | 'discontinued',
+        isActive: product.status === 'active',
         createdAt: product.created_at,
         updatedAt: product.updated_at,
       }
