@@ -1,0 +1,89 @@
+import { api, APIError } from "encore.dev/api";
+import { orderDB } from "./db";
+import type { UpdateOrderRequest, OrderResponse } from "./types";
+
+// Updates an order's status or payment information.
+export const update = api<{ id: number } & UpdateOrderRequest, OrderResponse>(
+  { expose: true, method: "PUT", path: "/orders/:id" },
+  async ({ id, ...updates }) => {
+    const setParts: string[] = [];
+    const values: any[] = [];
+    let paramIndex = 1;
+
+    if (updates.status !== undefined) {
+      setParts.push(`status = $${paramIndex++}`);
+      values.push(updates.status);
+    }
+    if (updates.stripePaymentIntentId !== undefined) {
+      setParts.push(`stripe_payment_intent_id = $${paramIndex++}`);
+      values.push(updates.stripePaymentIntentId);
+    }
+
+    if (setParts.length === 0) {
+      throw APIError.invalidArgument("no fields to update");
+    }
+
+    setParts.push(`updated_at = NOW()`);
+    values.push(id);
+
+    const query = `
+      UPDATE orders 
+      SET ${setParts.join(', ')}
+      WHERE id = $${paramIndex}
+      RETURNING *
+    `;
+
+    const order = await orderDB.rawQueryRow<{
+      id: number;
+      store_id: number;
+      customer_email: string;
+      customer_name: string;
+      total_amount: number;
+      status: string;
+      stripe_payment_intent_id: string | null;
+      shipping_address: any;
+      created_at: Date;
+      updated_at: Date;
+    }>(query, ...values);
+
+    if (!order) {
+      throw APIError.notFound("order not found");
+    }
+
+    const items = await orderDB.queryAll<{
+      id: number;
+      order_id: number;
+      product_id: number;
+      product_name: string;
+      product_price: number;
+      quantity: number;
+      created_at: Date;
+    }>`
+      SELECT * FROM order_items WHERE order_id = ${id} ORDER BY id
+    `;
+
+    return {
+      order: {
+        id: order.id,
+        storeId: order.store_id,
+        customerEmail: order.customer_email,
+        customerName: order.customer_name,
+        totalAmount: order.total_amount,
+        status: order.status as 'pending' | 'paid' | 'shipped' | 'delivered' | 'canceled',
+        stripePaymentIntentId: order.stripe_payment_intent_id || undefined,
+        shippingAddress: order.shipping_address || undefined,
+        items: items.map(item => ({
+          id: item.id,
+          orderId: item.order_id,
+          productId: item.product_id,
+          productName: item.product_name,
+          productPrice: item.product_price,
+          quantity: item.quantity,
+          createdAt: item.created_at,
+        })),
+        createdAt: order.created_at,
+        updatedAt: order.updated_at,
+      }
+    };
+  }
+);
