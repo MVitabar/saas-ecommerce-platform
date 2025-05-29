@@ -90,6 +90,20 @@ export default function CreateStoreDialog({ open, onOpenChange, userId }: Create
     }));
   };
 
+  const handleSlugChange = (slug: string) => {
+    // Clean the slug to ensure it's URL-friendly
+    const cleanSlug = slug
+      .toLowerCase()
+      .replace(/[^a-z0-9-]/g, '')
+      .replace(/--+/g, '-')
+      .replace(/(^-|-$)/g, '');
+    
+    setFormData(prev => ({
+      ...prev,
+      slug: cleanSlug,
+    }));
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
@@ -118,11 +132,14 @@ export default function CreateStoreDialog({ open, onOpenChange, userId }: Create
               <Input
                 id="slug"
                 value={formData.slug}
-                onChange={(e) => setFormData(prev => ({ ...prev, slug: e.target.value }))}
+                onChange={(e) => handleSlugChange(e.target.value)}
                 placeholder="my-store"
                 required
               />
             </div>
+            <p className="text-xs text-gray-500 mt-1">
+              Only lowercase letters, numbers, and hyphens are allowed
+            </p>
           </div>
 
           <div>
